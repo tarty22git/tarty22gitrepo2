@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:as400://${DB_HOST:localhost}/${DB_NAME:RECONDB};prompt=false;naming=sql
+    driver-class-name: com.ibm.as400.access.AS400JDBCDriver
+    username: ${DB_USER:db2user}
+    password: ${DB_PASS:db2pass}
+  jpa:
+    database-platform: org.hibernate.dialect.DB2Dialect

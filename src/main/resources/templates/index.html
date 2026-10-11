@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${appName} + ' - Dashboard'"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { min-height: 100vh; background: #1e293b; color: #fff; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px 20px; border-radius: 6px; }
+        .sidebar a:hover, .sidebar a.active { background: #334155; color: #fff; }
+        .stat-card { border-radius: 10px; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar p-3 style-sidebar" style="width: 260px;">
+        <h4 class="fw-bold px-3 py-2 text-primary" th:text="${appName}">CTH App</h4>
+        <hr class="text-secondary">
+        <ul class="nav flex-column gap-1">
+            <li><a href="/" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+            <li><a href="/reconcile"><i class="bi bi-file-earmark-diff me-2"></i> Compare CSV / Excel</a></li>
+            <li><a href="/reports"><i class="bi bi-bar-chart me-2"></i> Dynamic Reports</a></li>
+            <li><a href="/users"><i class="bi bi-people me-2"></i> User Management</a></li>
+            <li><a href="/settings"><i class="bi bi-gear me-2"></i> App Settings</a></li>
+            <li><a href="/swagger-ui.html" target="_blank"><i class="bi bi-code-slash me-2"></i> Swagger API Docs</a></li>
+        </ul>
+        <div class="mt-auto pt-4 px-3 border-top border-secondary">
+            <span class="small text-muted">User: <strong th:text="${currentUser}">User</strong></span>
+            <form th:action="@{/logout}" method="post" class="mt-2">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100">Sign Out</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-grow-1 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark">Real-Time Reconciliation Dashboard</h2>
+            <span class="badge bg-success p-2"><i class="bi bi-broadcast me-1"></i> Live Connection Active</span>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card p-3 bg-white">
+                    <div class="text-muted small">Total Jobs Executed</div>
+                    <div class="fs-3 fw-bold text-primary" id="stat-total-jobs" th:text="${totalJobs}">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card p-3 bg-white">
+                    <div class="text-muted small">Registered Users</div>
+                    <div class="fs-3 fw-bold text-dark" th:text="${totalUsers}">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card p-3 bg-white">
+                    <div class="text-muted small">Matched Rows</div>
+                    <div class="fs-3 fw-bold text-success" id="stat-matched" th:text="${totalMatched}">0</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card p-3 bg-white">
+                    <div class="text-muted small">Unmatched Rows</div>
+                    <div class="fs-3 fw-bold text-danger" id="stat-unmatched" th:text="${totalUnmatched}">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Jobs -->
+        <div class="card border-0 shadow-sm p-4">
+            <h5 class="fw-bold mb-3">Recent Reconciliation Operations</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Job Name</th>
+                            <th>File 1</th>
+                            <th>File 2</th>
+                            <th>Matched</th>
+                            <th>Unmatched</th>
+                            <th>Executed By</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-table-body">
+                        <tr th:each="job : ${recentJobs}">
+                            <td th:text="${job.jobName}">Reconciliation Job</td>
+                            <td th:text="${job.file1Name}">file1.csv</td>
+                            <td th:text="${job.file2Name}">file2.csv</td>
+                            <td><span class="badge bg-success" th:text="${job.matchedCount}">0</span></td>
+                            <td><span class="badge bg-danger" th:text="${job.unmatchedCount}">0</span></td>
+                            <td th:text="${job.executedBy}">admin</td>
+                            <td th:text="${#temporals.format(job.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2025-01-01</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(recentJobs)}">
+                            <td colspan="7" class="text-center text-muted py-4">No jobs executed yet. Go to <a href="/reconcile">Compare CSV / Excel</a> to run a comparison.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const socket = new SockJS('/ws-dashboard');
+    const stompClient = Stomp.over(socket);
+    stompClient.connect({}, function (frame) {
+        stompClient.subscribe('/topic/dashboard-updates', function (message) {
+            const job = JSON.parse(message.body);
+            const tbody = document.getElementById('jobs-table-body');
+            const newRow = `
+                <tr class="table-warning">
+                    <td>${job.jobName}</td>
+                    <td>${job.file1Name}</td>
+                    <td>${job.file2Name}</td>
+                    <td><span class="badge bg-success">${job.matchedCount}</span></td>
+                    <td><span class="badge bg-danger">${job.unmatchedCount}</span></td>
+                    <td>${job.executedBy}</td>
+                    <td>Just now</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('afterbegin', newRow);
+        });
+    });
+</script>
+</body>
+</html>

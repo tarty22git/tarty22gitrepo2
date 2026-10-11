@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${appName} + ' - Comparison Results'"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { min-height: 100vh; background: #1e293b; color: #fff; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px 20px; border-radius: 6px; }
+        .sidebar a:hover, .sidebar a.active { background: #334155; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <div class="sidebar p-3 style-sidebar" style="width: 260px;">
+        <h4 class="fw-bold px-3 py-2 text-primary" th:text="${appName}">CTH App</h4>
+        <hr class="text-secondary">
+        <ul class="nav flex-column gap-1">
+            <li><a href="/"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+            <li><a href="/reconcile" class="active"><i class="bi bi-file-earmark-diff me-2"></i> Compare CSV / Excel</a></li>
+            <li><a href="/reports"><i class="bi bi-bar-chart me-2"></i> Dynamic Reports</a></li>
+            <li><a href="/users"><i class="bi bi-people me-2"></i> User Management</a></li>
+            <li><a href="/settings"><i class="bi bi-gear me-2"></i> App Settings</a></li>
+        </ul>
+    </div>
+
+    <div class="flex-grow-1 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark">Comparison & Reconciliation Results</h2>
+            <a href="/reconcile" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> New Comparison</a>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 border-0 shadow-sm">
+                    <span class="text-muted small">File 1 Rows</span>
+                    <span class="fs-4 fw-bold" th:text="${result.totalFile1Rows}">0</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 border-0 shadow-sm">
+                    <span class="text-muted small">File 2 Rows</span>
+                    <span class="fs-4 fw-bold" th:text="${result.totalFile2Rows}">0</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 border-0 shadow-sm bg-success text-white">
+                    <span class="small">Matched Rows</span>
+                    <span class="fs-4 fw-bold" th:text="${result.matchedCount}">0</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 border-0 shadow-sm bg-danger text-white">
+                    <span class="small">Unmatched Rows</span>
+                    <span class="fs-4 fw-bold" th:text="${result.unmatchedCount}">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-3" id="resultTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-bold text-success" id="matched-tab" data-bs-toggle="tab" data-bs-target="#matched" type="button">
+                    Matched Rows (<span th:text="${result.matchedCount}"></span>)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold text-danger" id="unmatched-tab" data-bs-toggle="tab" data-bs-target="#unmatched" type="button">
+                    Unmatched Rows (<span th:text="${result.unmatchedCount}"></span>)
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content bg-white p-3 card border-0 shadow-sm">
+            <div class="tab-pane fade show active" id="matched" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Match Key</th>
+                                <th>File 1 Data</th>
+                                <th>File 2 Data</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="row : ${result.matchedRows}">
+                                <td class="fw-bold" th:text="${row._key}">Key</td>
+                                <td th:text="${row._rowFile1}">Row 1</td>
+                                <td th:text="${row._rowFile2}">Row 2</td>
+                                <td><span class="badge bg-success">MATCHED</span></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(result.matchedRows)}">
+                                <td colspan="4" class="text-center text-muted py-3">No matched rows found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="unmatched" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Match Key</th>
+                                <th>Details / Discrepancy</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="row : ${result.unmatchedFile1Rows}">
+                                <td class="fw-bold" th:text="${row._key}">Key</td>
+                                <td>
+                                    <span th:if="${row._differences != null}" th:text="${row._differences}"></span>
+                                    <span th:if="${row._reason != null}" th:text="${row._reason}"></span>
+                                </td>
+                                <td><span class="badge bg-danger">UNMATCHED</span></td>
+                            </tr>
+                            <tr th:each="row : ${result.unmatchedFile2Rows}">
+                                <td class="fw-bold" th:text="${row._key}">Key</td>
+                                <td><span th:text="${row._reason}"></span></td>
+                                <td><span class="badge bg-warning text-dark">EXTRA IN FILE 2</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

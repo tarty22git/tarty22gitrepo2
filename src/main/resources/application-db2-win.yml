@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:db2://${DB_HOST:localhost}:50000/${DB_NAME:RECONDB}
+    driver-class-name: com.ibm.db2.jcc.DB2Driver
+    username: ${DB_USER:db2admin}
+    password: ${DB_PASS:db2pass}
+  jpa:
+    database-platform: org.hibernate.dialect.DB2Dialect

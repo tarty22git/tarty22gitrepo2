@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cth-data-reconciliation
+  labels:
+    app: cth-data-reconciliation
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cth-data-reconciliation
+  template:
+    metadata:
+      labels:
+        app: cth-data-reconciliation
+    spec:
+      containers:
+      - name: cth-app
+        image: cth-data-reconciliation:1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "db2-as400"
+        - name: JAVA_TOOL_OPTIONS
+          value: "-Xmx8g"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 5

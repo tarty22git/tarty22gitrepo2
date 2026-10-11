@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${appName} + ' - Compare CSV/Excel'"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { min-height: 100vh; background: #1e293b; color: #fff; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px 20px; border-radius: 6px; }
+        .sidebar a:hover, .sidebar a.active { background: #334155; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar p-3 style-sidebar" style="width: 260px;">
+        <h4 class="fw-bold px-3 py-2 text-primary" th:text="${appName}">CTH App</h4>
+        <hr class="text-secondary">
+        <ul class="nav flex-column gap-1">
+            <li><a href="/"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+            <li><a href="/reconcile" class="active"><i class="bi bi-file-earmark-diff me-2"></i> Compare CSV / Excel</a></li>
+            <li><a href="/reports"><i class="bi bi-bar-chart me-2"></i> Dynamic Reports</a></li>
+            <li><a href="/users"><i class="bi bi-people me-2"></i> User Management</a></li>
+            <li><a href="/settings"><i class="bi bi-gear me-2"></i> App Settings</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-grow-1 p-4">
+        <h2 class="fw-bold text-dark mb-4">CSV / Excel Reconciliation Tool</h2>
+
+        <div th:if="${error}" class="alert alert-danger p-3 mb-4" th:text="${error}"></div>
+
+        <!-- Step 1: Upload Files -->
+        <div th:if="${!analyzed}" class="card border-0 shadow-sm p-4 mb-4">
+            <h5 class="fw-bold text-primary mb-3">Step 1: Upload Files to Inspect Headers</h5>
+            <form th:action="@{/reconcile/analyze}" method="post" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">File 1 (CSV / Excel)</label>
+                        <input type="file" name="file1" class="form-control" required accept=".csv,.xls,.xlsx">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">File 2 (CSV / Excel)</label>
+                        <input type="file" name="file2" class="form-control" required accept=".csv,.xls,.xlsx">
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary px-4 py-2"><i class="bi bi-search me-1"></i> Analyze Column Headers</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Step 2: Column Selection & Comparison Config -->
+        <div th:if="${analyzed}" class="card border-0 shadow-sm p-4 mb-4">
+            <h5 class="fw-bold text-primary mb-3">Step 2: Select Matching Key & Comparison Columns</h5>
+            <form th:action="@{/reconcile/compare}" method="post" enctype="multipart/form-data">
+                <!-- Keep files -->
+                <input type="hidden" name="file1Name" th:value="${file1Name}">
+                <input type="hidden" name="file2Name" th:value="${file2Name}">
+
+                <div class="alert alert-info py-2 mb-3">
+                    Analyzing headers for <strong><span th:text="${file1Name}"></span></strong> and <strong><span th:text="${file2Name}"></span></strong>.
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-dark border-bottom pb-2">Select Key Column(s) (Matching Unique Identifiers)</h6>
+                        <div class="form-check" th:each="h : ${headers1}">
+                            <input class="form-check-input" type="checkbox" name="keyColumns" th:value="${h}" th:id="'key_' + ${h}">
+                            <label class="form-check-label fw-semibold" th:for="'key_' + ${h}" th:text="${h}"></label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-dark border-bottom pb-2">Select Comparison Columns (Attributes to Compare)</h6>
+                        <div class="form-check" th:each="h : ${headers1}">
+                            <input class="form-check-input" type="checkbox" name="compareColumns" th:value="${h}" th:id="'cmp_' + ${h}" checked>
+                            <label class="form-check-label fw-semibold" th:for="'cmp_' + ${h}" th:text="${h}"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Re-upload File 1</label>
+                        <input type="file" name="file1" class="form-control" required accept=".csv,.xls,.xlsx">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Re-upload File 2</label>
+                        <input type="file" name="file2" class="form-control" required accept=".csv,.xls,.xlsx">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success px-4 py-2"><i class="bi bi-play-circle me-1"></i> Execute Reconciliation</button>
+                    <a href="/reconcile" class="btn btn-outline-secondary px-4 py-2">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

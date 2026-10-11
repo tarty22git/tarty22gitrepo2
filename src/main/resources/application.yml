@@ -1,0 +1,37 @@
+# Application Configuration
+app:
+  name: "CTH Data Reconciliation Platform"
+  db-type: h2 # Options: db2-as400, db2-win, oracle, postgres, sqlserver, h2
+  auth-mode: DB # Options: DB, LDAP
+  2fa-enabled: false
+  password-expiration-days: 90
+
+spring:
+  application:
+    name: ${app.name}
+  profiles:
+    active: h2
+
+  jpa:
+    open-in-view: false
+    show-sql: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true

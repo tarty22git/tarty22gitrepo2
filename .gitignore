@@ -1,0 +1,10 @@
+target/
+*.log
+*.pid
+*.jar
+*.class
+.idea/
+.classpath
+.project
+.settings/
+/home/jules/self_created_tools/

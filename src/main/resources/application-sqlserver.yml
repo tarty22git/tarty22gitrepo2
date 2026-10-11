@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST:localhost}:1433;databaseName=${DB_NAME:recondb};encrypt=false
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    username: ${DB_USER:sa}
+    password: ${DB_PASS:Password123!}
+  jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
